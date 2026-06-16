@@ -1,0 +1,5 @@
+{
+  "off_topic_response": "I can only help with customer service inquiries regarding our platform. How can I help you with your account or product today?",
+  "escalation_response": "I am escalating this ticket to a human support agent. They will get back to you shortly.",
+  "error_message": "Sorry, I encountered an error. Please try again later."
+}
