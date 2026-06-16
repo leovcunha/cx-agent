@@ -21,7 +21,7 @@ const ChatHeader = ({ subtitle, showLogout = false, onLogout }: ChatHeaderProps)
           </div>
           
           <div>
-            <h3 className="font-semibold text-lg">AI Referral Assistant</h3>
+            <h3 className="font-semibold text-lg">AI Customer Support Agent</h3>
             <p className="text-sm text-blue-100">{subtitle || "Online • Ready to help"}</p>
           </div>
         </div>

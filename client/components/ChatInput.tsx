@@ -39,7 +39,7 @@ const ChatInput = ({ onSendMessage }: ChatInputProps) => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your referral request..."
+            placeholder="Type your message..."
             className="w-full resize-none rounded-2xl border border-gray-300 px-4 py-2 pr-12 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 max-h-32"
             rows={1}
           />

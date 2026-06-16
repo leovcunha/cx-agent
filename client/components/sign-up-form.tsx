@@ -116,7 +116,7 @@ export function SignUpForm({
                       <Input
                         id="business-name"
                         type="text"
-                        placeholder="e.g. Refero Clinic"
+                        placeholder="e.g. TechFlow Cloud"
                         required
                         value={businessName}
                         onChange={onBusinessNameChange}
@@ -127,7 +127,7 @@ export function SignUpForm({
                       <Label htmlFor="business-description">{t('businessDescriptionLabel')}</Label>
                       <Textarea
                         id="business-description"
-                        placeholder="e.g. A premier medical clinic offering top-notch healthcare services."
+                        placeholder="e.g. A cloud infrastructure provider."
                         value={businessDescription}
                         onChange={onBusinessDescriptionChange}
                       />
