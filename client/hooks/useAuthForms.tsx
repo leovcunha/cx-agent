@@ -225,3 +225,53 @@ export const useOAuthLogin = () => {
 
   return { handleGoogleLogin };
 };
+
+export const useGuestLogin = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGuestLogin = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // 1. Call backend API to provision a fresh demo user and business profile securely
+      const resp = await fetch("/api/auth/demo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        let errorMsg = "Failed to provision guest account";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.detail || errorMsg;
+        } catch {
+          errorMsg = errorText || errorMsg;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const credentials = await resp.json();
+      const { email, password } = credentials;
+
+      // 2. Sign in with the generated email and password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) throw signInError;
+    } catch (err) {
+      console.error("Guest login error details:", err);
+      const msg = err instanceof Error ? err.message : (typeof err === "string" ? err : JSON.stringify(err)) || "An error occurred";
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { handleGuestLogin, isLoading, error };
+};

@@ -13,6 +13,8 @@ from fastapi import FastAPI
 
 from api.routes.messages import router as messages_router
 from api.routes.chat import router as chat_router
+from api.routes.auth import router as auth_router
+from api.routes.documents import router as documents_router
 
 
 debug_enabled = os.environ.get("BACKEND_DEBUG") == "1"
@@ -27,7 +29,9 @@ if not debug_enabled:
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 
-app = FastAPI(title="Refero app", openapi_url=None, docs_url=None, redoc_url=None)
+app = FastAPI(title="Customer Support Agent Platform", openapi_url=None, docs_url=None, redoc_url=None)
 
 app.include_router(messages_router)
 app.include_router(chat_router)
+app.include_router(auth_router)
+app.include_router(documents_router)

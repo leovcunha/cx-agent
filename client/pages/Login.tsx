@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { useEmailPasswordLogin, useEmailPasswordSignUp, useOAuthLogin } from '@/hooks/useAuthForms'
+import { useEmailPasswordLogin, useEmailPasswordSignUp, useOAuthLogin, useGuestLogin } from '@/hooks/useAuthForms'
 import { useTranslation } from 'react-i18next'
 
 // Import the UNMODIFIED form components
@@ -26,6 +26,7 @@ const LoginPage = () => {
   const loginForm = useEmailPasswordLogin()
   const signUpForm = useEmailPasswordSignUp()
   const { handleGoogleLogin } = useOAuthLogin()
+  const { handleGuestLogin, isLoading: guestLoading, error: guestError } = useGuestLogin()
   const { t } = useTranslation()
 
   if (loading || session) {
@@ -38,11 +39,33 @@ const LoginPage = () => {
         
         <div className="text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            {t('aiReferralAssistant')}
+            AI Customer Support Agent
           </h1>
           <p className="mt-2 text-gray-600">
             {view === 'login' ? t('loginSubtitle') : t('signupSubtitle')}
           </p>
+        </div>
+
+        {/* --- One-Click Guest Demo Button --- */}
+        <div className="space-y-2">
+          <Button 
+            type="button" 
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-6 rounded-xl shadow-md transition-all duration-200 transform hover:scale-[1.01]"
+            onClick={handleGuestLogin}
+            disabled={guestLoading}
+          >
+            {guestLoading ? "Creating guest session..." : "Try Live Demo (One-Click Guest Access)"}
+          </Button>
+          {guestError && <p className="text-sm text-red-500 text-center">{guestError}</p>}
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-muted-foreground">Or sign in with password</span>
+          </div>
         </div>
 
         {/* --- Conditional rendering controlled by the parent --- */}
