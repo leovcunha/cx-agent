@@ -15,6 +15,7 @@ from api.routes.messages import router as messages_router
 from api.routes.chat import router as chat_router
 from api.routes.auth import router as auth_router
 from api.routes.documents import router as documents_router
+from api.routes.evaluations import router as evaluations_router
 
 
 debug_enabled = os.environ.get("BACKEND_DEBUG") == "1"
@@ -53,3 +54,4 @@ app.include_router(messages_router)
 app.include_router(chat_router)
 app.include_router(auth_router)
 app.include_router(documents_router)
+app.include_router(evaluations_router)
