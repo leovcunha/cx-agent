@@ -71,7 +71,7 @@ async def fetch_last_n_messages(client_id: str, tenant_id: str, limit: int = 10)
         "tenant_id": f"eq.{tenant_id}",
         "order": "timestamp.desc",
         "limit": str(limit),
-        "select": "sender,text,timestamp"
+        "select": "id,sender,text,timestamp"
     }
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     
