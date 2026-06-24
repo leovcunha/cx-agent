@@ -21,7 +21,7 @@ class TestHttpEndpoints(unittest.TestCase):
                 "api.routes.messages.fetch_last_n_messages",
                 new=AsyncMock(
                     return_value=[
-                        {"sender": "user", "text": "hi", "timestamp": "2026-06-16T12:00:00Z"}
+                        {"id": "msg-1", "sender": "user", "text": "hi", "timestamp": "2026-06-16T12:00:00Z"}
                     ]
                 ),
             ):
@@ -33,7 +33,7 @@ class TestHttpEndpoints(unittest.TestCase):
                 self.assertEqual(resp.status_code, 200)
                 self.assertEqual(
                     resp.json(),
-                    {"messages": [{"sender": "user", "text": "hi", "timestamp": "2026-06-16T12:00:00Z"}]},
+                    {"messages": [{"id": "msg-1", "sender": "user", "text": "hi", "timestamp": "2026-06-16T12:00:00Z"}]},
                 )
 
     def test_messages_invalid_client_id(self):
@@ -66,7 +66,7 @@ class TestHttpEndpoints(unittest.TestCase):
                 new=AsyncMock(),
             ), patch(
                 "api.routes.chat.get_agent_response",
-                new=AsyncMock(return_value="Agent reply"),
+                new=AsyncMock(return_value=("Agent reply", "Some context")),
             ):
                 resp = self.client.post(
                     "/api/chat",
