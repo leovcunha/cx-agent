@@ -1,81 +1,67 @@
 # Customer Service Agent Architecture
 
 ## Overview
-The Customer Service Agent is built as a stateful graph (using LangGraph or a custom state machine). It is designed to act as a Tier 1 support agent that strictly adheres to Standard Operating Procedures (SOPs). 
+The Customer Service Agent is built as a stateful graph (using LangGraph). It acts as a Tier 1 support agent that strictly adheres to Standard Operating Procedures (SOPs). 
+
+This project is structured as a **portfolio website** showcasing the agent's capabilities in 4 distinct scenarios:
+1. **E-Commerce Support**
+2. **Credit Card Disputes**
+3. **Internet Provider Troubleshooting**
+4. **E-Learning Platform Support**
+
+Visitors can interact with the agent directly in a guest-authenticated chat interface. There is no administrative SOP upload; all SOP policies are pre-seeded in the database during development/deployment.
 
 ## Core Workflow (Graph Nodes)
 
 The agent operates in a continuous loop until the issue is resolved or escalated.
 
+```mermaid
+graph TD
+    START([START]) --> Intake[Intake Node]
+    Intake --> Triage[Triage Node]
+    Triage -- "off-topic" --> Resolution[Resolution Node]
+    Triage -- "on-topic" --> Retrieval[Retrieval Node]
+    Retrieval --> Action[Action Node]
+    Action -- "more info needed / tool call" --> Action
+    Action -- "resolved / escalated" --> Resolution
+    Resolution --> END([END])
+```
+
 ### 1. Intake Node
-*   **Purpose:** Receives the initial or follow-up query from the user.
-*   **Functionality:** Updates the conversation state with the latest user message.
+*   **Purpose:** Receives the customer's message (initial query or follow-up response).
+*   **Functionality:** Updates the conversation state with the latest message.
 
 ### 2. Triage Node
-*   **Purpose:** Classifies the intent of the user's message and enforces guardrails.
+*   **Purpose:** Classifies the user's intent and enforces safety guardrails.
 *   **Intents:** `product_troubleshooting`, `account_access`, `feature_request`, `general_inquiry`, `off-topic`.
-*   **Security & Scope:** 
-    *   Evaluates the query for prompt injection attacks or attempts to "game" the system.
-    *   Politely declines and redirects queries that are entirely outside the agent's supported domain.
-*   **Output:** The classified intent, which dictates the next node (Retrieval or Direct Action/Escalation).
+*   **Security & Guardrails:**
+    *   Evaluates the message for prompt injection or system game-playing.
+    *   Flags inputs completely unrelated to the active business scenario as `off-topic`.
+*   **Output:** The classified intent, routing the flow to the Retrieval Node or directly to Resolution (for off-topic messages).
 
 ### 3. Retrieval Node
-*   **Purpose:** Fetches relevant Standard Operating Procedures (SOPs) based on the classified intent and conversation history.
-*   **Functionality:** Queries the vector database to retrieve the specific policy chunks required to handle the user's issue.
+*   **Purpose:** Fetches relevant SOP chunks using vector similarity search.
+*   **Functionality:**
+    *   Generates a vector embedding of the user's query using a local/free sentence transformer model (`all-MiniLM-L6-v2`).
+    *   Queries `supabase` using `pgvector` to perform similarity search, filtered by the active demo's `tenant_id` to prevent cross-scenario data leakage.
 
 ### 4. Action Node
-*   **Purpose:** Reasons over the retrieved SOPs and decides on the next action.
+*   **Purpose:** Reasons over the retrieved SOP context using Gemini 1.5 Pro to decide the next response or action.
 *   **Functionality:**
-    *   Determines if more information is needed from the user.
-    *   **Plug-and-Play Configuration:** To support multiple business types, this node relies on an injected `BusinessProfile` state. This profile dictates available tools (e.g., a "CheckOrderStatus" tool for ecommerce vs. "CheckServerStatus" for a SaaS company). The agent dynamically binds tool definitions based on the active business profile, making the underlying LangGraph logic completely reusable across different domains.
+    *   Determines if more information is required from the customer.
+    *   Binds tools dynamically based on the active scenario (e.g., mock tools like tracking orders, checking system status, or initiating fee waivers).
+    *   Adheres strictly to the pre-seeded SOP without inventing steps.
 
 ### 5. Resolution / Escalation Node
-*   **Purpose:** Closes the loop or hands off to a human agent.
+*   **Purpose:** Closes the chat turn or transfers the customer.
 *   **Functionality:**
-    *   **Resolution:** If the SOP has been successfully executed and the user is satisfied, mark the ticket as resolved.
-    *   **Escalation:** If the SOP dictates escalation, or if the agent cannot resolve the issue after a set number of turns, it triggers an escalation tool (e.g., creating a ticket in Jira/Zendesk and allowing the user to provide final context).
+    *   **Resolution:** Closes the interaction when the query has been successfully resolved according to policy.
+    *   **Escalation:** If the policy dictates human escalation, it transfers the conversation state to a mock escalation ticket.
 
 ## State Management
-The agent will maintain a state object containing:
-*   `conversation_history`: List of messages.
+The graph maintains a state object (`AgentState`) containing:
+*   `messages`: The conversation message history.
+*   `tenant_id`: Identifies the selected scenario (`ecommerce_demo`, `creditcard_demo`, `internet_demo`, or `elearning_demo`).
 *   `current_intent`: The latest classified intent.
-*   `retrieved_context`: SOPs fetched from the vector store.
-*   `collected_info`: Structured data gathered from the user (e.g., account email, error code).
-*   `status`: e.g., `open`, `awaiting_user_input`, `resolved`, `escalated`.
-
-## Technical Implementation: Graph State & Execution Flow
-
-In LangGraph (Python), the state is managed using a `TypedDict`. This object is passed sequentially between the nodes.
-
-```python
-from typing import TypedDict, Annotated, Sequence
-from langchain_core.messages import BaseMessage
-import operator
-
-class AgentState(TypedDict):
-    # The conversation history (messages appended via operator.add)
-    messages: Annotated[Sequence[BaseMessage], operator.add]
-    
-    # Metadata for the current tenant/business to isolate data
-    tenant_id: str
-    
-    # Graph execution state
-    current_intent: str
-    retrieved_context: str
-    
-    # Data gathered during the Action Node loop
-    collected_info: dict
-```
-
-### Graph Edge Flow Definition
-The agent's state machine is built with specific routing logic:
-*   **START -> Intake:** Always starts here to parse user input.
-*   **Intake -> Triage:** Passes the message for intent classification.
-*   **Triage -> Conditional Edge:**
-    *   If intent == `off-topic`: Route to **Resolution** (Agent replies with off-topic warning and exits loop).
-    *   Otherwise: Route to **Retrieval**.
-*   **Retrieval -> Action:** Retrieves SOPs and hands off to the LLM.
-*   **Action -> Conditional Edge:**
-    *   If the LLM calls a tool (e.g., `ask_user_for_info` or `check_status`): Route to tool execution, then loop back to **Action**.
-    *   If resolved/escalated: Route to **Resolution** and then **END**.
-```
+*   `retrieved_context`: Relevant SOP passages retrieved from the vector database.
+*   `collected_info`: Structured values gathered during conversation steps (e.g., emails, transaction numbers).

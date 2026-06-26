@@ -19,14 +19,20 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
+from typing import Optional
+
 @router.post("/api/chat", response_model=ChatResponse)
-async def handle_web_chat(message: WebChatMessage, authorization: str = Header(...)):
+async def handle_web_chat(message: WebChatMessage, authorization: Optional[str] = Header(None)):
     log.info(f"Processing web chat message for client ID: {message.client_id}")
 
     if not os.environ.get("SUPABASE_URL"):
         return JSONResponse({"error": "Configuration error"}, status_code=500)
 
-    tenant_id = await get_tenant_id_from_jwt(authorization)
+    if message.tenant_id:
+        tenant_id = message.tenant_id
+    else:
+        tenant_id = await get_tenant_id_from_jwt(authorization)
+        
     if not tenant_id:
         raise HTTPException(status_code=401, detail="Unauthorized or invalid token")
 

@@ -44,6 +44,7 @@ class WebChatMessage(BaseModel):
     client_id: str
     chat_id: str
     message: str
+    tenant_id: Optional[str] = None
 
 
 class StatusOkResponse(BaseModel):
@@ -52,6 +53,7 @@ class StatusOkResponse(BaseModel):
 
 class MessagesRequest(BaseModel):
     clientId: str
+    tenantId: Optional[str] = None
 
 
 class MessagesResponse(BaseModel):

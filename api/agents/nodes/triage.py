@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from typing import Dict, Any
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 from api.agents.state import AgentState
 from api.utils.supabase_client import fetch_business_details
@@ -11,7 +11,7 @@ from api.utils.supabase_client import fetch_business_details
 log = logging.getLogger(__name__)
 
 async def triage_node(state: AgentState) -> Dict[str, Any]:
-    """Classify user intent using Gemini 1.5 Flash."""
+    """Classify user intent using Groq Llama 3."""
     log.info("Executing triage node")
     
     tenant_id = state.get("tenant_id") or "default_business"
@@ -47,9 +47,8 @@ Do not include any other text or markdown formatting.
 User Input: {last_message}"""
 
     try:
-        # We assume GEMINI_API_KEY is in the environment
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+        llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
             temperature=0.0
         )
         

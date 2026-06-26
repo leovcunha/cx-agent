@@ -15,8 +15,8 @@ const LandingPage = () => {
           <span className="ml-3 font-bold text-xl text-gray-900">{t('aiReferralAssistant')}</span>
         </Link>
         <nav className="ml-auto flex gap-2 sm:gap-4 items-center">
-          <Link to="/login">
-            <Button className="bg-blue-600 hover:bg-blue-700">{t('getStarted')}</Button>
+          <Link to="/chat/demo">
+            <Button className="bg-blue-600 hover:bg-blue-700">{t('tryLiveDemo')}</Button>
           </Link>
         </nav>
       </header>
@@ -35,9 +35,9 @@ const LandingPage = () => {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link to="/login">
+                  <Link to="/chat/demo">
                     <Button size="lg" className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20">
-                      {t('tryForFree')}
+                      {t('tryLiveDemo')}
                       <Zap className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>

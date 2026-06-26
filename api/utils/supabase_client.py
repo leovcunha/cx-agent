@@ -5,6 +5,16 @@ import httpx
 
 log = logging.getLogger(__name__)
 
+# Lazy initialization of the global client to avoid asyncio event loop attachment issues
+# when the module is imported before Uvicorn starts the event loop.
+_http_client: Optional[httpx.AsyncClient] = None
+
+def get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None:
+        _http_client = httpx.AsyncClient(timeout=15.0)
+    return _http_client
+
 
 def _get_supabase_url() -> Optional[str]:
     return os.environ.get("SUPABASE_URL")
@@ -36,14 +46,14 @@ async def get_tenant_id_from_jwt(authorization: str) -> Optional[str]:
         "apikey": supabase_key,
         "Authorization": authorization,
     }
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(url, headers=headers)
-            if resp.status_code == 200:
-                return resp.json().get("id")
-        except Exception as e:
-            log.error(f"Error verifying JWT: {e}")
-        return None
+    client = get_http_client()
+    try:
+        resp = await client.get(url, headers=headers)
+        if resp.status_code == 200:
+            return resp.json().get("id")
+    except Exception as e:
+        log.error(f"Error verifying JWT: {e}")
+    return None
 
 
 async def fetch_last_n_messages(client_id: str, tenant_id: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -65,17 +75,17 @@ async def fetch_last_n_messages(client_id: str, tenant_id: str, limit: int = 10)
     }
     headers = {"apikey": supabase_key, "Authorization": f"Bearer {supabase_key}"}
     
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(url, headers=headers, params=params)
-            resp.raise_for_status()
-            messages = resp.json()
-            log.info(f"fetch_last_n_messages: Successfully fetched {len(messages)} messages.")
-            # Return in chronological order
-            return messages[::-1]
-        except Exception as e:
-            log.error(f"fetch_last_n_messages: Error fetching messages: {e}", exc_info=True)
-            return []
+    client = get_http_client()
+    try:
+        resp = await client.get(url, headers=headers, params=params)
+        resp.raise_for_status()
+        messages = resp.json()
+        log.info(f"fetch_last_n_messages: Successfully fetched {len(messages)} messages.")
+        # Return in chronological order
+        return messages[::-1]
+    except Exception as e:
+        log.error(f"fetch_last_n_messages: Error fetching messages: {e}", exc_info=True)
+        return []
 
 
 async def save_message_to_supabase(client_id: str, tenant_id: str, sender: str, text: str):
@@ -99,15 +109,15 @@ async def save_message_to_supabase(client_id: str, tenant_id: str, sender: str, 
         "sender": sender,
         "text": text
     }
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(url, headers=headers, json=data)
-            response.raise_for_status()
-            log.info(f"save_message_to_supabase: Successfully saved message.")
-            return response.json()
-        except Exception as e:
-            log.error(f"save_message_to_supabase: Error saving message: {e}", exc_info=True)
-            raise
+    client = get_http_client()
+    try:
+        response = await client.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        log.info(f"save_message_to_supabase: Successfully saved message.")
+        return response.json()
+    except Exception as e:
+        log.error(f"save_message_to_supabase: Error saving message: {e}", exc_info=True)
+        raise
 
 
 async def fetch_business_details(
@@ -120,11 +130,11 @@ async def fetch_business_details(
     url = f"{supabase_url}/rest/v1/businesses"
     params = {"id": f"eq.{business_id}"}
     headers = _admin_headers()
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(url, headers=headers, params=params)
-            if resp.status_code == 200 and resp.json():
-                return resp.json()[0]
-        except Exception as e:
-            log.error(f"Error fetching business details: {e}")
-        return None
+    client = get_http_client()
+    try:
+        resp = await client.get(url, headers=headers, params=params)
+        if resp.status_code == 200 and resp.json():
+            return resp.json()[0]
+    except Exception as e:
+        log.error(f"Error fetching business details: {e}")
+    return None

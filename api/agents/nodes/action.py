@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Dict, Any
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, AIMessage
 from api.agents.state import AgentState
 from api.utils.supabase_client import fetch_business_details
@@ -9,7 +9,7 @@ from api.utils.supabase_client import fetch_business_details
 log = logging.getLogger(__name__)
 
 async def action_node(state: AgentState) -> Dict[str, Any]:
-    """Execute LLM reasoning over retrieved SOPs using Gemini 1.5 Flash."""
+    """Execute LLM reasoning over retrieved SOPs using Groq Llama 3."""
     log.info("Executing action node")
     
     tenant_id = state.get("tenant_id") or "default_business"
@@ -70,8 +70,8 @@ Below are the Standard Operating Procedures (SOPs) retrieved from the database f
     chat_input = [SystemMessage(content=system_prompt)] + list(messages)
     
     try:
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+        llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
             temperature=0.2
         )
         response = await llm.ainvoke(chat_input)

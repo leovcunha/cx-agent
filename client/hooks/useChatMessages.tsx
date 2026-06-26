@@ -14,9 +14,10 @@ export interface ChatMessage {
 interface UseChatMessagesOptions {
   clientId: string;
   chatId: string;
+  tenantId?: string;
 }
 
-export const useChatMessages = ({ clientId, chatId }: UseChatMessagesOptions) => {
+export const useChatMessages = ({ clientId, chatId, tenantId }: UseChatMessagesOptions) => {
   const { session } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -26,12 +27,12 @@ export const useChatMessages = ({ clientId, chatId }: UseChatMessagesOptions) =>
   const accessToken = session?.access_token ?? null;
 
   const refreshMessages = useCallback(async (force = false) => {
-    if (!clientId || !chatId || !accessToken) {
-      console.log("[useChatMessages] Missing required parameters:", { clientId, chatId, hasToken: !!accessToken });
+    if (!clientId || !chatId) {
+      console.log("[useChatMessages] Missing required parameters:", { clientId, chatId });
       return;
     }
 
-    const cacheKey = `${clientId}:${chatId}:${accessToken}`;
+    const cacheKey = `${clientId}:${chatId}:${tenantId}:${accessToken}`;
     if (!force && lastFetchRef.current === cacheKey) {
       console.log("[useChatMessages] Cache hit, skipping fetch for", clientId);
       return;
@@ -41,10 +42,10 @@ export const useChatMessages = ({ clientId, chatId }: UseChatMessagesOptions) =>
     lastFetchRef.current = cacheKey;
     setLoading(true);
     try {
-      const result = await apiRequest<{ messages: any[] }>("/api/messages", {
+      const result = await apiRequest<{ messages: Record<string, unknown>[] }>("/api/messages", {
         method: "POST",
         token: accessToken,
-        body: { clientId },
+        body: { clientId, tenantId },
       });
 
       if (!result.ok || !result.data) {
@@ -66,27 +67,27 @@ export const useChatMessages = ({ clientId, chatId }: UseChatMessagesOptions) =>
     } finally {
       setLoading(false);
     }
-  }, [accessToken, chatId, clientId]);
+  }, [accessToken, chatId, clientId, tenantId]);
 
   // Reset messages and load when clientId or chatId changes
   useEffect(() => {
-    console.log("[useChatMessages] Client/Chat changed:", { clientId, chatId });
+    console.log("[useChatMessages] Client/Chat/Tenant changed:", { clientId, chatId, tenantId });
     setMessages([]);
     // Reset cache key so we force a fetch for the new client
     lastFetchRef.current = "";
     setLoading(true);
-  }, [clientId, chatId]);
+  }, [clientId, chatId, tenantId]);
 
   // Trigger fetch when parameters are ready
   useEffect(() => {
-    if (clientId && chatId && accessToken) {
+    if (clientId && chatId) {
       refreshMessages();
     }
-  }, [clientId, chatId, accessToken, refreshMessages]);
+  }, [clientId, chatId, refreshMessages, tenantId]);
 
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!text.trim() || !clientId || !chatId || !accessToken) {
+      if (!text.trim() || !clientId || !chatId) {
         return;
       }
 
@@ -106,7 +107,7 @@ export const useChatMessages = ({ clientId, chatId }: UseChatMessagesOptions) =>
         const chatResult = await apiRequest("/api/chat", {
           method: "POST",
           token: accessToken,
-          body: { client_id: clientId, chat_id: chatId, message: text },
+          body: { client_id: clientId, chat_id: chatId, message: text, tenant_id: tenantId },
         });
         if (!chatResult.ok) {
           throw new Error("Network response was not ok");
@@ -120,7 +121,7 @@ export const useChatMessages = ({ clientId, chatId }: UseChatMessagesOptions) =>
         setIsTyping(false);
       }
     },
-    [accessToken, chatId, clientId, refreshMessages]
+    [accessToken, chatId, clientId, refreshMessages, tenantId]
   );
 
   return {

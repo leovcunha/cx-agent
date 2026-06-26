@@ -26,42 +26,56 @@ Integration tests:
 - Tests must run without external credentials by default.
 - Any test that requires live services/keys must skip unless `RUN_INTEGRATION_TESTS=1`.
 
-## Principles 
+1. Guided Autonomy & Transparency
+Prioritize momentum, but never hide your reasoning or make silent structural decisions.
 
-### 1. Think and Align Before Coding
-*Do not assume user intent, do not hide technical uncertainty, and always make tradeoffs explicit before writing code.*
+State, Then Execute: If an implementation detail is ambiguous, choose the standard best-practice approach, state your assumption clearly in your response, and proceed. Only halt and ask the user if a missing credential, conflicting requirement, or missing dependency completely blocks execution.
 
-* **Explicit Assumptions**: If a requirement is underspecified or ambiguous, stop and state your assumptions before proceeding. If you are uncertain about a design decision, ask for clarification from the user.
-* **No Speculative Mocking/Fallbacks**: Never write speculative code, placeholder modes, or mock logic (e.g., simulating API responses because of missing keys) based on assumptions about user resources or configurations. If a resource or key is missing, halt and ask the user how they wish to proceed.
-* **Surface Tradeoffs**: When multiple implementation paths exist, present them to the user with their pros, cons, and performance implications (e.g., latency, dependency overhead).
-* **Propose Simpler Alternatives**: If a requested feature can be achieved through a simpler or more elegant design, propose it before implementing the more complex requested approach.
-* **Halt on Confusion**: If you encounter contradictory requirements or confusing legacy code, stop immediately. Document the exact conflict and wait for clarification.
+Surface Tradeoffs Briefly: If choosing between two valid paths (e.g., memory efficiency vs. speed), implement the simpler one but briefly note the alternative to the user.
 
-### 2. Radical Simplicity (YAGNI & KISS)
-*Write the absolute minimum amount of code necessary to solve the problem. Do not write speculative code or build premature abstractions.*
+No Mocking/Placeholders: Never write mock API responses, placeholder modes, or fake data unless explicitly instructed. If an endpoint or key is missing, build the architecture to support it, then ask the user for the actual integration details.
 
-* **No Speculative Features**: Only implement features explicitly requested. 
-* **Compress and Rewrite**: Keep code compact and readable.
-* **Realistic Error Handling**: Implement error handling for expected external failure modes (e.g., API timeouts, rate limits, network drops). Do not write redundant error handling or check for impossible states in deterministic local code.
+Optimize first for human readers: clarity, locality, explicitness, visible control flow, consistent conventions, and practical correctness over cleverness, minimal keystrokes, or fashion.
 
-### 3. Surgical and Non-Invasive Edits
-*Limit the footprint of your changes. Touch only the files, lines, and functions that are strictly necessary to accomplish the goal.*
+2. Radical Simplicity (YAGNI & KISS)
+Write the absolute minimum amount of code necessary. 
 
-* **Strict Scope Isolation**: Do not "improve," reformat, or refactor adjacent code or files that are outside the scope of the requested change. Leave them exactly as they are.
-* **Match Existing Style**: Conform entirely to the existing coding style, naming conventions, directory structures, and import patterns in the repository, even if you prefer a different approach.
-* **Flag, Do Not Delete**: If you notice dead, unused, or deprecated code during your work, do not delete it. Instead, flag it to the user or note it in the pull request description.
-* **Clean Up**: If temporary scripts are created to test anything that won't be part of the test suite, please remove them at the end.
+No Premature Abstractions: Only abstract code if it immediately reduces duplication or solves a structural problem for features that are required today. Do not build abstract classes, factories, or generic interfaces for hypothetical future use cases.
 
-### 4. Goal-Oriented and Verifiable Execution
-*Define clear success criteria for every task and verify them programmatically before concluding work.*
+Treat rising complexity as defect risk: split tangled routines or modules, remove duplication that multiplies maintenance effort, and reduce what a maintainer must keep in working memory.
 
-* **Failing Test First (Reproduction)**: When fixing a bug, first write a test case or script that reproduces the bug and fails. Verify that the bug is fixed only when that specific test case passes.
-* **Pre/Post Regression Checks**: Before and after making any change, run existing verification suites (linting, type checking, or unit tests) to ensure zero regressions are introduced.
-* **Explicit Success Criteria**: Avoid vague definitions of done. Translate tasks into concrete, verifiable outcomes:
-  * *Vague*: "Implement API endpoint validation."
-  * *Verifiable*: "Write an integration test that sends invalid JSON to the endpoint, verify it returns 422 Unprocessable Entity, then make the test pass."
-* **Test Structure**: All backend Python test suites must live in the `api/tests/` directory, use `pytest` assertions, and name test files with the `test_` prefix. **Unit tests** must be runnable in isolation and mock network calls to external APIs. **Integration tests** that require live services/keys must skip unless `RUN_INTEGRATION_TESTS=1` is set.
+Literal Execution: Only implement features explicitly requested by the user. Do not anticipate future edge cases that fall outside the current scope.
 
+Targeted Error Handling: Only implement error handling for volatile external I/O (e.g., api calls, database queries, file system access). Do not add defensive type-checking or try/catch blocks to deterministic local functions unless requested.
+
+Keep functions or methods small, focused, and at one level of abstraction. Tell the story top-down so intent appears before detail.
+
+Let design emerge through tests, duplication removal, expressiveness, and minimal structure; do not add needless abstractions or infrastructure.
+
+3. Surgical & Non-Invasive Edits
+Limit changes to only what is strictly necessary.
+
+Zero Collateral Damage: Do not reformat, refactor, compress, or "clean up" adjacent code, imports, or files that are outside the immediate scope of the user's request.
+
+Match Existing Paradigms: Adopt the exact naming conventions, file structures, and coding styles present in the surrounding code, even if it contradicts modern generic best practices.
+
+Leave Dead Code Alone: If you spot unused or deprecated code, leave it exactly as it is. You may flag it to the user in chat, but do not delete it from the codebase.
+
+Clean Up After Yourself: Any temporary scaffolding or scripts created purely to verify your own work must be deleted before you finish the task.
+
+When cleanup starts spreading into unrelated areas, cut back to the smallest refactor that keeps the requested change safe and readable.
+
+
+4. Verifiable Execution
+Prove the code works before concluding the task with tests. 
+
+Test-Driven Fixes: When fixing a bug, attempt to write a failing test or isolated reproduction script first. The bug is only considered fixed when this exact test passes.
+
+Regression Awareness: Always ensure your changes do not break existing code. If test suites or type checkers are available in the repository, run them before declaring the task complete.
+
+Clear Success States: Avoid abstract goals. Define exactly what output, terminal code, or visual change dictates that the task is successfully finished.
+
+When fixing a bug or changing behavior, add or update the test that protects the intended contract.
 ---
 
 ## Non-Negotiables
@@ -73,7 +87,7 @@ Integration tests:
 5. Keep cross-layer contracts explicit (schemas/types) and versionable.
 6. Tests are required for behavior changes and bug fixes.
 7. Do not read the `.env` file. Assume keys are injected by the environment. If it is suspected they are missing, ask the user to check.
-
+8. There should be no hardcoded information like text blocks, urls, etc. anywhere that could represent replaceable data, these should instead be moved into appropriate location within the folder.
 ---
 
 ## Repo Boundaries
@@ -142,7 +156,6 @@ Practical rules:
 
 Route handlers (FastAPI endpoints) may:
 - Parse and validate request (`api/schemas/...`)
-- AuthN/AuthZ (dependencies)
 - Call a service function
 - Shape response (explicit schema) and map exceptions to HTTP errors
 
@@ -165,7 +178,6 @@ Structure and size:
 - Split routes by domain (e.g., `api/routes/messages.py`).
 - Keep `api/index.py` as the app entry point only.
 - Group agent/LLM dependencies under `api/agents/`.
-- Keep files small and focused; split when a module grows too large.
 
 Schemas and contracts:
 - All request/response bodies must have Pydantic models under `api/schemas/`.
@@ -196,6 +208,7 @@ Imports:
 - Group imports: external libs, internal modules, relative paths.
 - Use path aliases (`@/`) when available.
 - Avoid unused imports.
+- don't do imports in the middle of the code , but on the header.
 
 TypeScript:
 - Use `type` for unions and simple aliases; `interface` for object shapes when extending.
@@ -216,29 +229,9 @@ Logging:
 - Log intent and outcomes; do not log secrets, tokens, or full PII payloads.
 
 ---
-
-## Localization & Prompt Management
-
-- **User-Facing Text**: All user-facing text and error messages must be internationalized using `react-i18next`. Do not use hardcoded strings. Language selection must be persisted across all pages (Landing, Login, Dashboard) using `localStorage` and/or cookies.
-- **Prompt Sourcing**: All app prompt content must come from `api/locales/*/system_prompt.md`. Do not use `prompts.json` or hardcode prompt text in code.
-- **Prompt Validation**: Locale prompt loading is mandatory. If prompt files are missing/unreadable, fail safely and log; do not silently fall back to hardcoded prompts.
-- **Tool Parity**: Prompt instructions in locale files must exactly match actual implemented tool/function names.
-
----
-
-## Product Runtime Requirements (App Behavior)
-
-The rules in this section describe how the built app should behave at runtime. They are product requirements, not instructions about how the coding agent should format responses.
-
-- This app uses LangGraph for app-side workflow orchestration (no PydanticAI or other framework).
-- Enforce referral-only conversation: redirect off-topic messages back to referrals.
-- If the user declines to participate, thank them and end the referral flow.
-
----
-
 ## Development Guardrails (Implementation Policy)
 
-The rules in this section are coding policies for future implementations and refactors.
+The rules in this section are additional coding policies discovered on previous bad behaviour discovered, therefore should be followed .
 
 - LangGraph conversation state must have a single source of truth per flow: either checkpointer/thread state or explicit provided history, but never both at once.
 - LangGraph nodes that inspect tool outputs must avoid scanning stale historical tool messages from prior turns.

@@ -3,6 +3,9 @@ import unittest
 import asyncio
 from api.message_service import get_agent_response
 
+from dotenv import load_dotenv
+load_dotenv()
+
 RUN_INTEGRATION_TESTS = os.environ.get("RUN_INTEGRATION_TESTS") == "1"
 
 @unittest.skipUnless(RUN_INTEGRATION_TESTS, "Integration tests require RUN_INTEGRATION_TESTS=1")

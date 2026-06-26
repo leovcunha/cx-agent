@@ -8,7 +8,7 @@ import uvicorn
 sys.path.append(os.getcwd())
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the Refero backend.")
+    parser = argparse.ArgumentParser(description="Run the CX agent backend.")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging and access logs.")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind the server to.")
     parser.add_argument("--port", type=int, default=8000, help="Port to bind the server to.")

@@ -1,7 +1,8 @@
 import logging
 import os
 
-from fastapi import APIRouter, Body, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException
+from typing import Optional
 from fastapi.responses import JSONResponse
 
 from api.schemas.schema import MessagesRequest, MessagesResponse
@@ -15,15 +16,19 @@ router = APIRouter()
 
 @router.post("/api/messages", response_model=MessagesResponse)
 async def get_messages(
-    authorization: str = Header(...),
-    body: MessagesRequest = Body(...),
+    body: MessagesRequest,
+    authorization: Optional[str] = Header(None),
 ):
     """Fetch all messages for a client from Supabase, validating caller JWT."""
 
     if not os.environ.get("SUPABASE_URL"):
         return JSONResponse({"messages": []}, status_code=500)
 
-    tenant_id = await get_tenant_id_from_jwt(authorization)
+    if body.tenantId:
+        tenant_id = body.tenantId
+    else:
+        tenant_id = await get_tenant_id_from_jwt(authorization)
+        
     if not tenant_id:
         raise HTTPException(status_code=401, detail="Unauthorized or invalid token")
 
