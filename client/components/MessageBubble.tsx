@@ -53,6 +53,19 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
           {getStatusIcon()}
+          {!isUser && (
+            <button
+              onClick={() => {
+                // Dispatch a custom event to notify Chat.tsx
+                window.dispatchEvent(new CustomEvent('openCompliance', { detail: message.id }));
+              }}
+              className="ml-2 flex items-center text-[10px] text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 px-1.5 py-0.5 rounded border border-gray-100"
+              title="View Compliance Report"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Compliance
+            </button>
+          )}
         </div>
       </div>
       
