@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChatInterface from "@/components/ChatInterface";
+import CompliancePanel from "@/components/CompliancePanel";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { Bot, ArrowLeft } from "lucide-react";
+import { Bot, ArrowLeft, Shield } from "lucide-react";
 
 const SCENARIOS = [
   { id: "ecommerce_demo", key: "demoEcommerce" },
@@ -17,9 +18,24 @@ const ChatPage = () => {
   const { chatId } = useParams<{ chatId: string }>();
   const { t } = useTranslation();
   const [activeScenario, setActiveScenario] = useState(SCENARIOS[0].id);
+  
+  const [activeTab, setActiveTab] = useState<"chat" | "compliance">("chat");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | undefined>();
 
-  // Isolate conversation history per scenario
-  const actualClientId = chatId ? `${chatId}_${activeScenario}` : `demo_${activeScenario}`;
+  useEffect(() => {
+    const handleOpenCompliance = (e: CustomEvent<string>) => {
+      setSelectedMessageId(e.detail);
+      setActiveTab("compliance");
+    };
+    
+    window.addEventListener('openCompliance', handleOpenCompliance as EventListener);
+    return () => window.removeEventListener('openCompliance', handleOpenCompliance as EventListener);
+  }, []);
+
+  // Use a unique session ID so each page load represents a "fresh" demo user,
+  // but keep the tenantId constant so the dashboard still aggregates all data.
+  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 9));
+  const actualClientId = chatId ? `${chatId}_${activeScenario}_${sessionId}` : `demo_${activeScenario}_${sessionId}`;
 
   const { messages, loading, isTyping, sendMessage } = useChatMessages({
     clientId: actualClientId,
@@ -81,11 +97,33 @@ const ChatPage = () => {
                 <p className="text-xs text-blue-600 font-medium">{activeScenarioTitle}</p>
               </div>
             </div>
-            {/* Mobile Home Link */}
-            <Link to="/" className="md:hidden flex items-center text-sm text-gray-500 hover:text-gray-800">
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Home
-            </Link>
+            
+            <div className="flex items-center space-x-3">
+              <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setActiveTab("chat")}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === "chat" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Chat
+                </button>
+                <button
+                  onClick={() => setActiveTab("compliance")}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center ${
+                    activeTab === "compliance" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Shield className="w-4 h-4 mr-1.5" />
+                  Dashboard
+                </button>
+              </div>
+              {/* Mobile Home Link */}
+              <Link to="/" className="md:hidden flex items-center text-sm text-gray-500 hover:text-gray-800">
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Home
+              </Link>
+            </div>
           </div>
 
           {/* Mobile Scenario Selector */}
@@ -105,14 +143,25 @@ const ChatPage = () => {
             ))}
           </div>
 
-          <div className="flex-1 overflow-hidden relative bg-gray-50">
-            <ChatInterface
-              messages={messages}
-              loading={loading}
-              isTyping={isTyping}
-              onSendMessage={sendMessage}
-              hideHeader={true}
-            />
+          <div className="flex-1 overflow-hidden relative bg-gray-50 flex">
+            {activeTab === "chat" ? (
+              <div className="flex-1 overflow-hidden relative bg-gray-50 w-full h-full">
+                <ChatInterface
+                  messages={messages}
+                  loading={loading}
+                  isTyping={isTyping}
+                  onSendMessage={sendMessage}
+                  hideHeader={true}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 overflow-hidden relative bg-gray-50 w-full h-full">
+                <CompliancePanel
+                  tenantId={activeScenario}
+                  messageId={selectedMessageId}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
