@@ -31,8 +31,8 @@ class TestTriage(unittest.TestCase):
         self.assertEqual(result["current_intent"], "product_troubleshooting")
         
         # Verify the prompt passed to the LLM contains the history
-        mock_llm_instance.invoke.assert_called_once()
-        call_args = mock_llm_instance.invoke.call_args[0][0]
+        mock_llm_instance.ainvoke.assert_called_once()
+        call_args = mock_llm_instance.ainvoke.call_args[0][0]
         prompt_content = call_args[0].content
         
         self.assertIn("User: My item is broken", prompt_content)
