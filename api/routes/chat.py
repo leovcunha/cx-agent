@@ -21,8 +21,15 @@ router = APIRouter()
 
 from typing import Optional
 
+from fastapi import BackgroundTasks
+from api.agents.evaluator import evaluate_message_async
+
 @router.post("/api/chat", response_model=ChatResponse)
-async def handle_web_chat(message: WebChatMessage, authorization: Optional[str] = Header(None)):
+async def handle_web_chat(
+    message: WebChatMessage, 
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None)
+):
     log.info(f"Processing web chat message for client ID: {message.client_id}")
 
     if not os.environ.get("SUPABASE_URL"):
@@ -62,7 +69,7 @@ async def handle_web_chat(message: WebChatMessage, authorization: Optional[str] 
             log.error(f"Failed to save user message: {e}")
             return JSONResponse({"error": "Failed to save user message"}, status_code=500)
 
-    cleaned_response = await get_agent_response(
+    cleaned_response, retrieved_context = await get_agent_response(
         user_message=user_msg,
         client_id=message.client_id,
         tenant_id=tenant_id,
@@ -70,14 +77,27 @@ async def handle_web_chat(message: WebChatMessage, authorization: Optional[str] 
     )
 
     try:
-        await save_message_to_supabase(
+        db_res = await save_message_to_supabase(
             client_id=message.client_id,
             tenant_id=tenant_id,
             sender="ai",
             text=cleaned_response,
         )
+        
+        # Trigger background evaluation if we have a valid message ID
+        if db_res and len(db_res) > 0 and "id" in db_res[0]:
+            ai_msg_id = db_res[0]["id"]
+            background_tasks.add_task(
+                evaluate_message_async,
+                message_id=ai_msg_id,
+                tenant_id=tenant_id,
+                user_query=user_msg,
+                ai_response=cleaned_response,
+                retrieved_context=retrieved_context
+            )
+            
     except Exception as e:
-        log.error(f"Failed to save AI response: {e}")
+        log.error(f"Failed to save AI response: {e}", exc_info=True)
         return JSONResponse({"error": "Failed to save AI response"}, status_code=500)
 
     return {"response": cleaned_response}

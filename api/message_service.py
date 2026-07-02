@@ -11,12 +11,14 @@ from api.agents.graph import build_customer_service_graph
 
 log = logging.getLogger(__name__)
 
+from typing import Any, Dict, List, Optional, Tuple
+
 async def get_agent_response(
     user_message: str,
     client_id: str,
     tenant_id: str = "default_business",
     conversation_history: Optional[List[Dict]] = None,
-) -> str:
+) -> Tuple[str, str]:
     """Run one graph turn for the Customer Service Agent."""
     if conversation_history is None:
         conversation_history = []
@@ -47,21 +49,18 @@ async def get_agent_response(
     
     try:
         graph = build_customer_service_graph()
-        # Invoke the graph (note: this requires the graph to be async if it has async nodes, 
-        # but right now our placeholders are sync so we can use invoke or ainvoke)
-        # Using ainvoke in case we add async logic later.
         result = await graph.ainvoke(state)
         
-        # The result state should contain the new messages
         final_messages = result.get("messages", [])
+        retrieved_context = result.get("retrieved_context", "")
         if final_messages:
-            return final_messages[-1].content
+            return final_messages[-1].content, retrieved_context
         else:
-            return "No response generated."
+            return "No response generated.", retrieved_context
             
     except Exception as e:
         log.error("Error running workflow: %s", e, exc_info=True)
-        return "Sorry, I encountered an error while processing your request."
+        return "Sorry, I encountered an error while processing your request.", ""
 
 async def respond_and_send_message(user_message: str, client_id: str, tenant_id: str = "default_business"):
     """Process an inbound message end-to-end."""
@@ -77,7 +76,7 @@ async def respond_and_send_message(user_message: str, client_id: str, tenant_id:
         await save_message_to_supabase(client_id, tenant_id, "user", user_message)
         
         # 3. Generate response
-        response_text = await get_agent_response(user_message, client_id, tenant_id, conversation_history)
+        response_text, retrieved_context = await get_agent_response(user_message, client_id, tenant_id, conversation_history)
         
         # 4. Persist AI message
         await save_message_to_supabase(client_id, tenant_id, "ai", response_text)

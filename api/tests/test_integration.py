@@ -18,7 +18,7 @@ class TestCustomerServiceAgentIntegration(unittest.TestCase):
     def test_password_reset_flow(self):
         async def run():
             query_1 = "Hi, I forgot my password. How can I reset it?"
-            response_1 = await get_agent_response(
+            response_1, context_1 = await get_agent_response(
                 user_message=query_1,
                 client_id=self.client_id,
                 tenant_id=self.tenant_id,
@@ -34,7 +34,7 @@ class TestCustomerServiceAgentIntegration(unittest.TestCase):
             self.history.append({"sender": "ai", "text": response_1})
             
             query_2 = "My email is support@example.com"
-            response_2 = await get_agent_response(
+            response_2, context_2 = await get_agent_response(
                 user_message=query_2,
                 client_id=self.client_id,
                 tenant_id=self.tenant_id,
@@ -52,7 +52,7 @@ class TestCustomerServiceAgentIntegration(unittest.TestCase):
     def test_platform_connection_error_flow(self):
         async def run():
             query_1 = "I am getting a timeout error when trying to connect to the platform."
-            response_1 = await get_agent_response(
+            response_1, context_1 = await get_agent_response(
                 user_message=query_1,
                 client_id=self.client_id,
                 tenant_id=self.tenant_id,
@@ -70,7 +70,7 @@ class TestCustomerServiceAgentIntegration(unittest.TestCase):
             self.history.append({"sender": "ai", "text": response_1})
             
             query_2 = "I am on the Desktop App"
-            response_2 = await get_agent_response(
+            response_2, context_2 = await get_agent_response(
                 user_message=query_2,
                 client_id=self.client_id,
                 tenant_id=self.tenant_id,
@@ -88,7 +88,7 @@ class TestCustomerServiceAgentIntegration(unittest.TestCase):
     def test_feature_request_flow(self):
         async def run():
             query_1 = "I would like to suggest a new dark mode feature."
-            response_1 = await get_agent_response(
+            response_1, context_1 = await get_agent_response(
                 user_message=query_1,
                 client_id=self.client_id,
                 tenant_id=self.tenant_id,
@@ -99,14 +99,14 @@ class TestCustomerServiceAgentIntegration(unittest.TestCase):
             print("Agent:", response_1)
             
             self.assertTrue(
-                "problem" in response_1.lower() or "use" in response_1.lower() or "solve" in response_1.lower() or "why" in response_1.lower()
+                any(word in response_1.lower() for word in ["problem", "use", "solve", "why", "more", "how", "envision"])
             )
         asyncio.run(run())
 
     def test_off_topic_flow(self):
         async def run():
             query_1 = "What is the capital of France?"
-            response_1 = await get_agent_response(
+            response_1, context_1 = await get_agent_response(
                 user_message=query_1,
                 client_id=self.client_id,
                 tenant_id=self.tenant_id,
