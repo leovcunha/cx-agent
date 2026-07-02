@@ -37,7 +37,19 @@ async def triage_node(state: AgentState) -> Dict[str, Any]:
         role = "User" if msg.type in ("human", "user") else "Assistant"
         conversation_history += f"{role}: {msg.content}\n"
     
-    triage_prompt = f"""Analyze the user's latest input within the context of the conversation and classify their intent into one of the following categories:
+    root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    prompt_path = os.path.join(root_dir, "locales", "en", "triage_prompt.md")
+    
+    triage_prompt_template = ""
+    if os.path.exists(prompt_path):
+        try:
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                triage_prompt_template = f.read()
+        except Exception as e:
+            log.error(f"Error loading triage_prompt.md: {e}")
+            
+    if not triage_prompt_template:
+        triage_prompt_template = """Analyze the user's latest input within the context of the conversation and classify their intent into one of the following categories:
 [product_troubleshooting, account_access, feature_request, general_inquiry, off-topic]
 
 Company Name: {company_name}
@@ -52,9 +64,17 @@ Do not include any other text or markdown formatting.
 Conversation History:
 {conversation_history}"""
 
+    triage_prompt = triage_prompt_template.format(
+        company_name=company_name,
+        company_desc=company_desc,
+        conversation_history=conversation_history
+    )
+    
+    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+
     try:
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model=model_name,
             temperature=0.0
         )
         

@@ -2,6 +2,7 @@ import logging
 import json
 import random
 import re
+import os
 from typing import Optional, Dict, Any
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -12,7 +13,31 @@ log = logging.getLogger(__name__)
 # Evaluate 100% of messages for the demo
 SAMPLE_RATE = 1.0
 
-EVALUATOR_SYSTEM_PROMPT = """You are a strict compliance evaluator for a customer service AI agent.
+async def evaluate_message_async(message_id: str, tenant_id: str, user_query: str, ai_response: str, retrieved_context: str):
+    """
+    Background task to evaluate an AI's response against the SOP and store it in Supabase.
+    This skips evaluation if it doesn't fall within the sampling rate.
+    """
+    if random.random() > SAMPLE_RATE:
+        log.info(f"Skipping evaluation for message {message_id} (Sampling).")
+        return
+
+    log.info(f"Evaluating message {message_id} for compliance...")
+
+    # Load system prompt template from file to comply with Rule #8
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    prompt_path = os.path.join(root_dir, "locales", "en", "evaluator_prompt.md")
+    
+    evaluator_system_prompt = ""
+    if os.path.exists(prompt_path):
+        try:
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                evaluator_system_prompt = f.read()
+        except Exception as e:
+            log.error(f"Error loading evaluator_prompt.md: {e}")
+            
+    if not evaluator_system_prompt:
+        evaluator_system_prompt = """You are a strict compliance evaluator for a customer service AI agent.
 Your job is to read the customer's query, the retrieved SOP (Standard Operating Procedure) context, and the AI agent's response.
 You must evaluate the AI agent's response and return a strictly formatted JSON object matching this schema:
 {
@@ -29,26 +54,17 @@ Rules:
 - hallucination_flag: True if the AI states policies, rules, or facts that are NOT in the provided SOP context.
 """
 
-async def evaluate_message_async(message_id: str, tenant_id: str, user_query: str, ai_response: str, retrieved_context: str):
-    """
-    Background task to evaluate an AI's response against the SOP and store it in Supabase.
-    This skips evaluation if it doesn't fall within the sampling rate.
-    """
-    if random.random() > SAMPLE_RATE:
-        log.info(f"Skipping evaluation for message {message_id} (Sampling).")
-        return
-
-    log.info(f"Evaluating message {message_id} for compliance...")
-
     prompt = f"Customer Query:\n{user_query}\n\nRetrieved SOP Context:\n{retrieved_context}\n\nAI Response:\n{ai_response}\n\nOutput strict JSON."
+    
+    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     
     try:
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model=model_name,
             temperature=0.0
         )
         messages = [
-            SystemMessage(content=EVALUATOR_SYSTEM_PROMPT),
+            SystemMessage(content=evaluator_system_prompt),
             HumanMessage(content=prompt)
         ]
         
