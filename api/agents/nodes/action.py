@@ -69,9 +69,10 @@ Below are the Standard Operating Procedures (SOPs) retrieved from the database f
     messages = state.get("messages", [])
     chat_input = [SystemMessage(content=system_prompt)] + list(messages)
     
+    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     try:
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model=model_name,
             temperature=0.2
         )
         response = await llm.ainvoke(chat_input)
