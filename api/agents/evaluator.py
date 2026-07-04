@@ -4,16 +4,15 @@ import random
 import re
 import os
 from typing import Optional, Dict, Any
-from langchain_groq import ChatGroq
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
 from api.utils.supabase_client import get_http_client, _get_supabase_url, _get_admin_key
+from api.providers.llm import get_llm
 
 log = logging.getLogger(__name__)
 
 # Evaluate 100% of messages for the demo
 SAMPLE_RATE = 1.0
-
-from langchain_core.language_models import BaseChatModel
 
 async def evaluate_message_async(
     message_id: str,
@@ -51,11 +50,7 @@ async def evaluate_message_async(
     prompt = f"Customer Query:\n{user_query}\n\nRetrieved SOP Context:\n{retrieved_context}\n\nAI Response:\n{ai_response}\n\nOutput strict JSON."
     
     if llm is None:
-        model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
-        llm = ChatGroq(
-            model=model_name,
-            temperature=0.0
-        )
+        llm = get_llm(temperature=0.0)
         
     messages = [
         SystemMessage(content=evaluator_system_prompt),

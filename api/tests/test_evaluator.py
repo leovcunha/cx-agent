@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 from api.agents.evaluator import evaluate_message_async
 
 class TestEvaluator(unittest.IsolatedAsyncioTestCase):
-    @patch("api.agents.evaluator.ChatGroq")
+    @patch("api.agents.evaluator.get_llm")
     @patch("api.agents.evaluator._save_evaluation")
     @patch("api.agents.evaluator.random.random", return_value=0.5)
     @patch("api.agents.evaluator.SAMPLE_RATE", 1.0)

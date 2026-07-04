@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from api.agents.nodes.triage import triage_node
 
 class TestTriage(unittest.TestCase):
-    @patch("api.agents.nodes.triage.ChatGroq")
+    @patch("api.agents.nodes.triage.get_llm")
     def test_triage_uses_history(self, mock_chat_groq):
         # Mock the LLM
         from unittest.mock import AsyncMock

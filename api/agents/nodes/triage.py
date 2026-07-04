@@ -3,10 +3,10 @@ import json
 import logging
 import re
 from typing import Dict, Any
-from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 from api.agents.state import AgentState
 from api.utils.supabase_client import fetch_business_details
+from api.providers.llm import get_llm
 
 log = logging.getLogger(__name__)
 
@@ -70,13 +70,8 @@ Conversation History:
         conversation_history=conversation_history
     )
     
-    model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
-
     try:
-        llm = ChatGroq(
-            model=model_name,
-            temperature=0.0
-        )
+        llm = get_llm(temperature=0.0)
         
         response = await llm.ainvoke([HumanMessage(content=triage_prompt)])
         content = response.content.strip()

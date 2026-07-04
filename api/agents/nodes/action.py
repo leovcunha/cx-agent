@@ -1,10 +1,10 @@
 import os
 import logging
 from typing import Dict, Any
-from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, AIMessage
 from api.agents.state import AgentState
 from api.utils.supabase_client import fetch_business_details
+from api.providers.llm import get_llm
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ Below are the Standard Operating Procedures (SOPs) retrieved from the database f
 {retrieved_context}
 
 # CORE DIRECTIVES & INSTRUCTIONS
-1. Adhere STRICTLY to the retrieved SOPs. Do not make up policies or invent technical steps that are not in the context.
+1. Adhere STRICTLY and step-by-step to the retrieved SOPs. Do not skip any steps in the policy. If a step asks you to collect information or ask a question before logging/resolving, you MUST ask that question first. Do not shortcut the process or assume information.
 2. Tone: {tone}
 3. Escalation Policy: {escalation_policy}
 4. If the SOP requires information from the user (such as their email, VPN status, Web vs Desktop app, or feature use-case description), ask the user for it clearly. ONLY ask for one piece of information at a time.
@@ -69,12 +69,8 @@ Below are the Standard Operating Procedures (SOPs) retrieved from the database f
     messages = state.get("messages", [])
     chat_input = [SystemMessage(content=system_prompt)] + list(messages)
     
-    model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
     try:
-        llm = ChatGroq(
-            model=model_name,
-            temperature=0.2
-        )
+        llm = get_llm(temperature=0.2)
         response = await llm.ainvoke(chat_input)
         ai_msg = AIMessage(content=response.content)
         log.info(f"Action Node generated response: {response.content[:100]}...")
