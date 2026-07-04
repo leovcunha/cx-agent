@@ -13,7 +13,16 @@ log = logging.getLogger(__name__)
 # Evaluate 100% of messages for the demo
 SAMPLE_RATE = 1.0
 
-async def evaluate_message_async(message_id: str, tenant_id: str, user_query: str, ai_response: str, retrieved_context: str):
+from langchain_core.language_models import BaseChatModel
+
+async def evaluate_message_async(
+    message_id: str,
+    tenant_id: str,
+    user_query: str,
+    ai_response: str,
+    retrieved_context: str,
+    llm: Optional[BaseChatModel] = None
+):
     """
     Background task to evaluate an AI's response against the SOP and store it in Supabase.
     This skips evaluation if it doesn't fall within the sampling rate.
@@ -37,37 +46,22 @@ async def evaluate_message_async(message_id: str, tenant_id: str, user_query: st
             log.error(f"Error loading evaluator_prompt.md: {e}")
             
     if not evaluator_system_prompt:
-        evaluator_system_prompt = """You are a strict compliance evaluator for a customer service AI agent.
-Your job is to read the customer's query, the retrieved SOP (Standard Operating Procedure) context, and the AI agent's response.
-You must evaluate the AI agent's response and return a strictly formatted JSON object matching this schema:
-{
-  "sop_adherence_score": int (0-100),
-  "policy_violations": ["list of string violations", or empty if none],
-  "tone_pass": boolean,
-  "hallucination_flag": boolean
-}
-
-Rules:
-- sop_adherence_score: 100 if perfect. Deduct points for missing information, violations, or bad tone.
-- policy_violations: If the AI violates any rule in the SOP, list it here clearly.
-- tone_pass: True if the tone is appropriate for a support agent.
-- hallucination_flag: True if the AI states policies, rules, or facts that are NOT in the provided SOP context.
-"""
+        raise FileNotFoundError(f"Required prompt file not found at: {prompt_path}")
 
     prompt = f"Customer Query:\n{user_query}\n\nRetrieved SOP Context:\n{retrieved_context}\n\nAI Response:\n{ai_response}\n\nOutput strict JSON."
     
-    model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
-    
-    try:
+    if llm is None:
+        model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
         llm = ChatGroq(
             model=model_name,
             temperature=0.0
         )
-        messages = [
-            SystemMessage(content=evaluator_system_prompt),
-            HumanMessage(content=prompt)
-        ]
         
+    messages = [
+        SystemMessage(content=evaluator_system_prompt),
+        HumanMessage(content=prompt)
+    ]
+    try:
         response = await llm.ainvoke(messages)
         raw_response = response.content.strip()
         
