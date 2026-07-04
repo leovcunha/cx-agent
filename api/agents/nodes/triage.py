@@ -70,7 +70,7 @@ Conversation History:
         conversation_history=conversation_history
     )
     
-    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 
     try:
         llm = ChatGroq(

@@ -56,7 +56,7 @@ Rules:
 
     prompt = f"Customer Query:\n{user_query}\n\nRetrieved SOP Context:\n{retrieved_context}\n\nAI Response:\n{ai_response}\n\nOutput strict JSON."
     
-    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model_name = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
     
     try:
         llm = ChatGroq(
