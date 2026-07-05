@@ -1,0 +1,43 @@
+# Git and editor configurations
+.git
+.gitignore
+.vscode
+.idea
+.gemini
+
+# Python environment and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+refero-env/
+
+# Frontend assets (deployed as static site separately)
+client/
+node_modules/
+dist/
+public/
+package.json
+package-lock.json
+vite.config.ts
+tailwind.config.ts
+tsconfig.json
+tsconfig.app.json
+tsconfig.node.json
+postcss.config.js
+eslint.config.js
+components.json
+index.html
+
+# Environment secrets
+.env
+.env.*
+
+# Local/temp files
+*.db
+scripts/.ingest_hashes.json
+temp_groq.py
