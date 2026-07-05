@@ -29,6 +29,24 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
     }
   };
 
+  const renderMessageText = (text: string) => {
+    const parts = text.split(/\*\*+/);
+    return (
+      <p className="text-sm leading-relaxed whitespace-pre-line">
+        {parts.map((part, index) => {
+          if (index % 2 === 1) {
+            return (
+              <strong key={index} className={`font-bold ${isUser ? 'text-white' : 'text-gray-950'}`}>
+                {part}
+              </strong>
+            );
+          }
+          return part;
+        })}
+      </p>
+    );
+  };
+
   return (
     <div className={`flex items-end space-x-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
@@ -45,7 +63,7 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
               : 'bg-white text-gray-800 rounded-bl-sm border'
           }`}
         >
-          <p className="text-sm leading-relaxed">{message.text}</p>
+          {renderMessageText(message.text)}
         </div>
         
         <div className={`flex items-center mt-1 space-x-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
