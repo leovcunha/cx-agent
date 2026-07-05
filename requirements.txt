@@ -2,7 +2,6 @@ fastapi
 pydantic
 httpx
 langchain
-langchain-google-genai==0.3.0
 langgraph
 python-dotenv
 uvicorn
