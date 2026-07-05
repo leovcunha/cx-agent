@@ -6,7 +6,7 @@ from typing import Dict, Any
 from langchain_core.messages import HumanMessage
 from api.agents.state import AgentState
 from api.utils.supabase_client import fetch_business_details
-from api.providers.llm import get_llm
+from api.agents.llm import get_llm
 
 log = logging.getLogger(__name__)
 

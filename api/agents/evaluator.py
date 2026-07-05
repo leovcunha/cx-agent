@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import SystemMessage, HumanMessage
 from api.utils.supabase_client import get_http_client, _get_supabase_url, _get_admin_key
-from api.providers.llm import get_llm
+from api.agents.llm import get_llm
 
 log = logging.getLogger(__name__)
 

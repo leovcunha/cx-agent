@@ -4,7 +4,7 @@ from typing import Dict, Any
 from langchain_core.messages import SystemMessage, AIMessage
 from api.agents.state import AgentState
 from api.utils.supabase_client import fetch_business_details
-from api.providers.llm import get_llm
+from api.agents.llm import get_llm
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ Below are the Standard Operating Procedures (SOPs) retrieved from the database f
 1. Adhere STRICTLY and step-by-step to the retrieved SOPs. Do not skip any steps in the policy. If a step asks you to collect information or ask a question before logging/resolving, you MUST ask that question first. Do not shortcut the process or assume information.
 2. Tone: {tone}
 3. Escalation Policy: {escalation_policy}
-4. If the SOP requires information from the user (such as their email, VPN status, Web vs Desktop app, or feature use-case description), ask the user for it clearly. ONLY ask for one piece of information at a time.
+4. If the SOP requires information from the user (such as their email, VPN status, Web vs Desktop app, or feature use-case description), ask the user for it clearly. If the SOP provides a specific example question (e.g., "Could you share a bit about what problem this feature would solve for you?"), you MUST ask that exact question. ONLY ask for one piece of information at a time.
 5. If the SOP indicates that a mock action must be triggered (e.g., 'send_reset_link' or 'log_feature_request') and the user has provided the required information, inform the user that you have executed the action successfully (e.g., "I have triggered the password reset link to your email address").
 6. If the SOP dictates escalation, or if the issue requires human intervention, state clearly that you are escalating the ticket to a human support agent.
 7. Keep responses concise and focused on the user's current question or the next step in the SOP.
@@ -70,7 +70,7 @@ Below are the Standard Operating Procedures (SOPs) retrieved from the database f
     chat_input = [SystemMessage(content=system_prompt)] + list(messages)
     
     try:
-        llm = get_llm(temperature=0.2)
+        llm = get_llm(temperature=0.0)
         response = await llm.ainvoke(chat_input)
         ai_msg = AIMessage(content=response.content)
         log.info(f"Action Node generated response: {response.content[:100]}...")
