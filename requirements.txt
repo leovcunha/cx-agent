@@ -2,6 +2,7 @@ fastapi
 pydantic
 httpx
 langchain
+langchain-text-splitters
 langgraph
 python-dotenv
 uvicorn
