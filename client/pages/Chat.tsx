@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import ChatInterface from "@/components/ChatInterface";
 import CompliancePanel from "@/components/CompliancePanel";
+import MessageComplianceModal from "@/components/MessageComplianceModal";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -21,11 +22,12 @@ const ChatPage = () => {
   
   const [activeTab, setActiveTab] = useState<"chat" | "compliance">("chat");
   const [selectedMessageId, setSelectedMessageId] = useState<string | undefined>();
+  const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
 
   useEffect(() => {
     const handleOpenCompliance = (e: CustomEvent<string>) => {
       setSelectedMessageId(e.detail);
-      setActiveTab("compliance");
+      setIsComplianceModalOpen(true);
     };
     
     window.addEventListener('openCompliance', handleOpenCompliance as EventListener);
@@ -158,13 +160,20 @@ const ChatPage = () => {
               <div className="flex-1 overflow-hidden relative bg-gray-50 w-full h-full">
                 <CompliancePanel
                   tenantId={activeScenario}
-                  messageId={selectedMessageId}
                 />
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {isComplianceModalOpen && selectedMessageId && (
+        <MessageComplianceModal
+          tenantId={activeScenario}
+          messageId={selectedMessageId}
+          onClose={() => setIsComplianceModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

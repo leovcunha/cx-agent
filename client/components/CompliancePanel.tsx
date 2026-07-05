@@ -1,124 +1,173 @@
-import { Shield, ShieldAlert, ShieldCheck, AlertTriangle, MessageSquare, CheckCircle, XCircle } from "lucide-react";
+import { Shield, AlertTriangle, AlertCircle, TrendingUp } from "lucide-react";
 import { useCompliance } from "@/hooks/useCompliance";
 
 interface CompliancePanelProps {
   tenantId: string;
-  messageId?: string;
-  isOpen: boolean;
-  onClose: () => void;
 }
 
-export default function CompliancePanel({ tenantId, messageId }: CompliancePanelProps) {
-  const { aggregate, isLoadingAggregate, messageEval, isLoadingMessageEval, isMessageEvalError } = useCompliance(tenantId, messageId);
+export default function CompliancePanel({ tenantId }: CompliancePanelProps) {
+  const { aggregate, isLoadingAggregate } = useCompliance(tenantId);
+
+  // Circular gauge math variables
+  const radius = 60;
+  const strokeWidth = 10;
+  const circumference = 2 * Math.PI * radius;
+  const averageSopAdherence = aggregate?.average_sop_adherence ?? 0;
+  const strokeDashoffset = circumference - (averageSopAdherence / 100) * circumference;
+
+  // Determine progress color class
+  const getProgressColor = (score: number) => {
+    if (score >= 80) return "stroke-emerald-500 text-emerald-600";
+    if (score >= 50) return "stroke-amber-500 text-amber-600";
+    return "stroke-rose-500 text-rose-600";
+  };
+
+  const getProgressBg = (score: number) => {
+    if (score >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-100";
+    if (score >= 50) return "bg-amber-50 text-amber-700 border-amber-100";
+    return "bg-rose-50 text-rose-700 border-rose-100";
+  };
+
+  // Helper stats
+  const totalEvals = aggregate?.total_evaluations ?? 0;
+  const totalViolations = aggregate?.total_policy_violations ?? 0;
+  const totalHallucinations = aggregate?.total_hallucinations ?? 0;
+
+  const violationPercentage = totalEvals > 0 ? Math.min(100, (totalViolations / totalEvals) * 100) : 0;
+  const hallucinationPercentage = totalEvals > 0 ? Math.min(100, (totalHallucinations / totalEvals) * 100) : 0;
 
   return (
     <div className="w-full bg-white flex flex-col shrink-0 h-full overflow-hidden font-sans">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
         <div className="flex items-center space-x-2">
-          <Shield className="w-5 h-5 text-blue-600" />
-          <h2 className="font-bold text-gray-900 text-sm">Compliance Dashboard</h2>
+          <Shield className="w-5 h-5 text-blue-600 animate-pulse" />
+          <h2 className="font-bold text-gray-900 text-sm">SOP Compliance Dashboard</h2>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        
-        {/* Aggregate Stats Section */}
-        <section>
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Historical Aggregates</h3>
-          {isLoadingAggregate ? (
-            <div className="animate-pulse space-y-2">
-              <div className="h-20 bg-gray-100 rounded-xl"></div>
-              <div className="h-10 bg-gray-100 rounded-xl"></div>
+      <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        {isLoadingAggregate ? (
+          <div className="space-y-6 animate-pulse">
+            <div className="flex flex-col items-center justify-center p-6 h-48 bg-gray-50 border border-gray-100 rounded-2xl">
+              <div className="w-28 h-28 bg-gray-200 rounded-full"></div>
             </div>
-          ) : aggregate ? (
             <div className="space-y-3">
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center">
-                <span className="text-3xl font-bold text-gray-900">{aggregate.average_sop_adherence}%</span>
-                <span className="text-xs text-gray-500 font-medium mt-1">Avg SOP Adherence</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-red-50 p-3 rounded-xl border border-red-100 flex flex-col items-center">
-                  <span className="text-lg font-bold text-red-600">{aggregate.total_policy_violations}</span>
-                  <span className="text-[10px] text-red-600 font-semibold uppercase text-center">Violations</span>
+              <div className="h-6 bg-gray-100 rounded-lg w-1/3"></div>
+              <div className="h-12 bg-gray-50 rounded-xl"></div>
+              <div className="h-12 bg-gray-50 rounded-xl"></div>
+            </div>
+          </div>
+        ) : aggregate && totalEvals > 0 ? (
+          <div className="space-y-6">
+            {/* Visual Circular Gauge */}
+            <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center shadow-sm">
+              <div className="relative flex items-center justify-center">
+                <svg className="w-36 h-36 transform -rotate-90">
+                  {/* Background circle */}
+                  <circle
+                    cx="72"
+                    cy="72"
+                    r={radius}
+                    className="stroke-gray-100 fill-none"
+                    strokeWidth={strokeWidth}
+                  />
+                  {/* Foreground filled circle */}
+                  <circle
+                    cx="72"
+                    cy="72"
+                    r={radius}
+                    className={`fill-none transition-all duration-1000 ease-out ${getProgressColor(averageSopAdherence)}`}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center text-center">
+                  <span className="text-3xl font-extrabold text-gray-900 leading-none">
+                    {averageSopAdherence}%
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1.5">
+                    Adherence
+                  </span>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 flex flex-col items-center">
-                  <span className="text-lg font-bold text-orange-600">{aggregate.total_hallucinations}</span>
-                  <span className="text-[10px] text-orange-600 font-semibold uppercase text-center">Hallucinations</span>
+              </div>
+
+              <div className={`mt-5 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${getProgressBg(averageSopAdherence)}`}>
+                {averageSopAdherence >= 80 ? "Healthy Compliance" : averageSopAdherence >= 50 ? "Needs Review" : "Critical Action Required"}
+              </div>
+            </div>
+
+            {/* Historical Metrics Charts */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Aggregated Infraction Rates
+                </h3>
+                <div className="flex items-center space-x-1 text-xs text-gray-500 font-medium">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                  <span>{totalEvals} total audits</span>
                 </div>
               </div>
-              <div className="text-xs text-center text-gray-400 font-medium">
-                Based on {aggregate.total_evaluations} evaluated messages
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500">No historical data available.</div>
-          )}
-        </section>
 
-        <div className="h-px bg-gray-100 w-full"></div>
-
-        {/* Selected Message Stats Section */}
-        <section>
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Selected Message</h3>
-          
-          {!messageId ? (
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center flex flex-col items-center">
-              <MessageSquare className="w-8 h-8 text-gray-300 mb-2" />
-              <p className="text-xs text-gray-500">Click on an AI message in the chat to view its compliance report.</p>
-            </div>
-          ) : isLoadingMessageEval ? (
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center animate-pulse">
-              <p className="text-xs text-blue-600 font-medium">Evaluating message...</p>
-            </div>
-          ) : isMessageEvalError || !messageEval ? (
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
-              <p className="text-xs text-gray-500">Evaluation pending or not sampled.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${messageEval.sop_adherence_score >= 80 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-                <span className="text-xs font-bold text-gray-700">SOP Adherence</span>
-                <span className={`text-sm font-bold ${messageEval.sop_adherence_score >= 80 ? 'text-green-700' : 'text-red-700'}`}>
-                  {messageEval.sop_adherence_score}%
-                </span>
-              </div>
-              
-              <div className="space-y-2">
-                <div className={`p-3 rounded-xl border flex items-start space-x-2 ${messageEval.hallucination_flag ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-100'}`}>
-                  {messageEval.hallucination_flag ? <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" /> : <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />}
-                  <div>
-                    <span className="text-xs font-bold text-gray-900 block">Hallucination Check</span>
-                    <span className="text-xs text-gray-500">{messageEval.hallucination_flag ? 'Invented policies detected' : 'Pass'}</span>
+              <div className="space-y-3.5">
+                {/* Policy Violations Bar */}
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-rose-500" />
+                      <span className="text-xs font-bold text-gray-800">Policy Violations Rate</span>
+                    </div>
+                    <span className="text-xs font-bold text-rose-600">
+                      {totalViolations} ({violationPercentage.toFixed(0)}%)
+                    </span>
                   </div>
+                  {/* Progress bar container */}
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-rose-500 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${violationPercentage}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-medium mt-1.5">
+                    Evaluations flagged for skipping steps or breaching limits.
+                  </p>
                 </div>
 
-                <div className={`p-3 rounded-xl border flex items-start space-x-2 ${!messageEval.tone_pass ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
-                  {!messageEval.tone_pass ? <XCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" /> : <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />}
-                  <div>
-                    <span className="text-xs font-bold text-gray-900 block">Tone & Brand Voice</span>
-                    <span className="text-xs text-gray-500">{!messageEval.tone_pass ? 'Failed tone guidelines' : 'Pass'}</span>
+                {/* Hallucinations Bar */}
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      <span className="text-xs font-bold text-gray-800">Hallucination Rate</span>
+                    </div>
+                    <span className="text-xs font-bold text-amber-600">
+                      {totalHallucinations} ({hallucinationPercentage.toFixed(0)}%)
+                    </span>
                   </div>
-                </div>
-
-                <div className={`p-3 rounded-xl border ${messageEval.policy_violations.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
-                  <div className="flex items-center space-x-2 mb-1">
-                    {messageEval.policy_violations.length > 0 ? <ShieldAlert className="w-4 h-4 text-red-600" /> : <ShieldCheck className="w-4 h-4 text-green-500" />}
-                    <span className="text-xs font-bold text-gray-900">Policy Violations</span>
+                  {/* Progress bar container */}
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${hallucinationPercentage}%` }}
+                    ></div>
                   </div>
-                  {messageEval.policy_violations.length > 0 ? (
-                    <ul className="list-disc list-inside text-xs text-red-700 mt-2 space-y-1">
-                      {messageEval.policy_violations.map((v, i) => (
-                        <li key={i}>{v}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span className="text-xs text-gray-500 ml-6">No violations found</span>
-                  )}
+                  <p className="text-[10px] text-gray-400 font-medium mt-1.5">
+                    Evaluations flagged for fabricating facts or policy claims.
+                  </p>
                 </div>
               </div>
-            </div>
-          )}
-        </section>
+            </section>
+          </div>
+        ) : (
+          <div className="bg-gray-50 border border-gray-100 p-8 rounded-2xl text-center space-y-2">
+            <Shield className="w-8 h-8 text-gray-300 mx-auto" />
+            <p className="text-sm font-semibold text-gray-800">No Historical Data Yet</p>
+            <p className="text-xs text-gray-500">
+              Evaluations will populate here as the AI response compliance auditor processes agent turns.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
