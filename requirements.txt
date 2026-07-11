@@ -5,6 +5,7 @@ langchain
 langchain-text-splitters
 langgraph
 python-dotenv
+python-multipart
 uvicorn
 pytest
 typing-extensions
